@@ -1,7 +1,7 @@
-use BMI_minesweeper::test;
+use BMI_minesweeper;
 
 fn main() {
     println!("Hello, world!");
 
-    test();
+    BMI_minesweeper::test();
 }
