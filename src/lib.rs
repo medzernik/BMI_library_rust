@@ -1,6 +1,6 @@
 extern crate core;
-use std::ops::Sub;
 use chrono::{DateTime, Utc};
+use std::ops::Sub;
 use time::PrimitiveDateTime;
 
 //use time::macros::{date, datetime};
@@ -18,8 +18,6 @@ pub fn test() {
 
 //get date (calculate date)
 fn get_date(date: DateTime<Utc>, unit: u8) -> DateTime<Utc> {
-
-
     match unit {
         1 => date.sub(chrono::Duration::days(1)),   //day
         2 => date.sub(chrono::Duration::weeks(1)),  //week
@@ -27,15 +25,19 @@ fn get_date(date: DateTime<Utc>, unit: u8) -> DateTime<Utc> {
         4 => date.sub(chrono::Duration::weeks(52)), //year (52 weeks)
         _ => panic!("Impossible value"),
     }
-
-
 }
 //data struct na save dat (output file?)
-
 //struct: tep, tlak, SpO2, BMI
 
 struct History {
     entry: Vec<OneMeasurement>,
+}
+
+impl History {
+    fn get_data_specific(self, date_to_find: DateTime<Utc>) {
+        let output: _ = self.entry.iter().filter(|x| x.date == date_to_find).collect();
+        println!("Output of specific date:\n {}", output);
+    }
 }
 
 struct OneMeasurement {
@@ -45,13 +47,16 @@ struct OneMeasurement {
     weight: f64,
     height: f64,
     bmi: f64,
-    date: PrimitiveDateTime,
+    date: DateTime<Utc>,
 }
 
 impl OneMeasurement {
     fn get_bmi(&mut self) {
         self.bmi = self.weight / (self.height * self.height);
     }
+
+
+
 }
 
 //get bmi (calculate bmi)
