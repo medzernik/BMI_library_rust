@@ -19,12 +19,10 @@ pub fn test() {
 
     println!(
         "Result of search is:\n {:?}",
-        main_template_struct.get_data_specific(Utc_test)
+        main_template_struct.get_data_specific(&Utc_test)
     );
 
-
-
-    println!("BMI filled:\n {:?}", main_template_struct.clone().get_bmi());
+    println!("BMI filled:\n {:?}", main_template_struct.get_bmi());
 
     /*
     println!("{}", Utc::now().format("%d/%m/%Y %H:%M"));
@@ -47,8 +45,17 @@ fn get_date(date: Date<Utc>, unit: u8) -> Date<Utc> {
         _ => panic!("Impossible value"),
     }
 }
-//data struct na save dat (output file?)
-//struct: tep, tlak, SpO2, BMI
+
+#[derive(Debug, Clone, Copy)]
+struct OneMeasurement {
+    heart_rate: u8,
+    blood_pressure: u8,
+    sp02: u8,
+    weight: f64,
+    height: f64,
+    bmi: f64,
+    date: Date<Utc>,
+}
 
 #[derive(Debug, Clone)]
 struct History {
@@ -56,8 +63,9 @@ struct History {
 }
 
 impl History {
+    ///generates a simple template for testing
     fn generate_template() -> History {
-        let output: History = History {
+        History {
             entry: vec![
                 OneMeasurement {
                     heart_rate: 55,
@@ -69,18 +77,16 @@ impl History {
                     date: Utc::today(),
                 },
                 OneMeasurement {
-                    heart_rate: 43,
-                    blood_pressure: 150,
-                    sp02: 100,
-                    weight: 150.0,
-                    height: 32.4,
+                    heart_rate: 55,
+                    blood_pressure: 120,
+                    sp02: 98,
+                    weight: 58.0,
+                    height: 194.3,
                     bmi: 0.0,
-                    date: Utc::today().sub(chrono::Duration::weeks(5)),
+                    date: Utc::today(),
                 },
             ],
-        };
-
-        return output;
+        }
     }
 
     fn get_bmi(self) {
@@ -89,30 +95,14 @@ impl History {
             .for_each(|mut x| x.bmi = x.weight / x.height.powf(x.height))
     }
 
-    fn get_data_specific(&self, date_to_find: Date<Utc>) -> Vec<OneMeasurement> {
-        let output = self.entry
+    fn get_data_specific(&self, date_to_find: &Date<Utc>) -> Vec<OneMeasurement> {
+        let output_new: Vec<OneMeasurement> = self
+            .entry
             .iter()
-            .filter(|x| x.date == date_to_find)
-            .map(|x| x.borrow())
+            .filter(|x| x.date == *date_to_find)
+            .copied()
             .collect();
 
-
-
-        output
+        output_new
     }
 }
-
-#[derive(Debug, Clone)]
-struct OneMeasurement {
-    heart_rate: u8,
-    blood_pressure: u8,
-    sp02: u8,
-    weight: f64,
-    height: f64,
-    bmi: f64,
-    date: Date<Utc>,
-}
-
-//get bmi (calculate bmi)
-
-//get all data on a date
