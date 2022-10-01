@@ -9,20 +9,21 @@ use std::ops::Sub;
 pub fn test() {
     let current_time = Utc::now();
 
-    let Utc_test: Date<Utc> = Utc::today();
+    let utc_test: Date<Utc> = Utc::today();
 
-    println!("Today's date (finding this one): {}", Utc_test);
+    println!("Today's date (finding this one): {:?}", utc_test);
 
-    let main_template_struct = History::generate_template();
+    let mut main_template_struct = History::generate_template();
 
     println!("Struct is:\n {:?}", main_template_struct);
 
     println!(
         "Result of search is:\n {:?}",
-        main_template_struct.get_data_specific(&Utc_test)
+        main_template_struct.get_data_specific(&utc_test)
     );
+    main_template_struct.get_bmi();
 
-    println!("BMI filled:\n {:?}", main_template_struct.get_bmi());
+    println!("BMI filled:\n {:#?}", main_template_struct);
 
     /*
     println!("{}", Utc::now().format("%d/%m/%Y %H:%M"));
@@ -48,11 +49,13 @@ fn get_date(date: Date<Utc>, unit: u8) -> Date<Utc> {
 
 #[derive(Debug, Clone, Copy)]
 struct OneMeasurement {
+    name: &'static str,
     heart_rate: u8,
-    blood_pressure: u8,
+    blood_pressure_systolic: u8,
+    blood_pressure_diastolic: u8,
     sp02: u8,
-    weight: f64,
-    height: f64,
+    weight_cm: f64,
+    height_kg: f64,
     bmi: f64,
     date: Date<Utc>,
 }
@@ -68,20 +71,24 @@ impl History {
         History {
             entry: vec![
                 OneMeasurement {
+                    name: "robo",
                     heart_rate: 55,
-                    blood_pressure: 120,
+                    blood_pressure_systolic: 120,
+                    blood_pressure_diastolic: 80,
                     sp02: 98,
-                    weight: 58.0,
-                    height: 194.3,
+                    weight_cm: 190.0,
+                    height_kg: 75.3,
                     bmi: 0.0,
                     date: Utc::today(),
                 },
                 OneMeasurement {
-                    heart_rate: 55,
-                    blood_pressure: 120,
-                    sp02: 98,
-                    weight: 58.0,
-                    height: 194.3,
+                    name: "jonas",
+                    heart_rate: 85,
+                    blood_pressure_systolic: 140,
+                    blood_pressure_diastolic: 35,
+                    sp02: 100,
+                    weight_cm: 170.0,
+                    height_kg: 90.7,
                     bmi: 0.0,
                     date: Utc::today(),
                 },
@@ -89,10 +96,17 @@ impl History {
         }
     }
 
-    fn get_bmi(self) {
-        self.entry
-            .into_iter()
-            .for_each(|mut x| x.bmi = x.weight / x.height.powf(x.height))
+    fn get_bmi(&mut self) {
+        self.entry.iter_mut().for_each(|x| {
+            println!("BMI is now set to: {}: {}", x.name, x.bmi);
+
+            //calculate the BMI, prepare to round to a specified decimal place
+            //(*1000 for display + *100 for the next calculation)
+            x.bmi = (x.weight_cm / x.height_kg.powf(2.0)) * 100000.;
+
+            //round to a specified decimal place
+            x.bmi = x.bmi .round() / 100.0;
+        })
     }
 
     fn get_data_specific(&self, date_to_find: &Date<Utc>) -> Vec<OneMeasurement> {
