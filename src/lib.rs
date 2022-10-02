@@ -11,7 +11,7 @@ pub fn test() {
 
     let utc_test: Date<Utc> = Utc::today();
 
-    println!("Today's date (finding this one): {:?}", utc_test);
+
 
     //generate an empty template
     let mut main_template_struct: History = History::generate_template();
@@ -36,9 +36,6 @@ pub fn test() {
 
     main_template_struct.generate_bmi();
 
-    println!("BMI filled:\n {:#?}", main_template_struct);
-
-    println!();
 
     compare_data(&main_template_struct, 2);
 }
@@ -55,23 +52,30 @@ fn get_date(date: Date<Utc>, unit: u8) -> Date<Utc> {
 }
 
 fn compare_data(data: &History, check_date: u8) {
+    let chosen_data = match data.get_data_specific(&get_date(Utc::today(), check_date)) {
+        Some(T) => T.first().map(|x| *x).expect("Error unwrapping chosen_data"),
+        None => {
+            eprintln!("Error, cannot find data specified");
+            return;
+        }
+    };
+
     let last_day_data = match data.get_data_specific(&get_date(Utc::today(), 1)) {
         Some(T) => T
             .first()
             .map(|x| *x)
             .expect("Error unwrapping last_day_data"),
-        None => panic!("Error, cannot find data specified"),
-    };
-
-    let chosen_data = match data.get_data_specific(&get_date(Utc::today(), check_date)) {
-        Some(T) => T.first().map(|x| *x).expect("Error unwrapping chosen_data"),
-        None => panic!("Error, cannot find data specified"),
+        None => {
+            eprintln!("There is no previous day data available");
+            println!("Printing only chosen data: {:#?}", chosen_data);
+            return;
+        }
     };
 
     //TODO: Make this work... subtract in a normal way.
     let mut difference: OneMeasurement = OneMeasurement {
         id: 0,
-        heart_rate: last_day_data.heart_rate- chosen_data.heart_rate,
+        heart_rate: last_day_data.heart_rate - chosen_data.heart_rate,
         blood_pressure_systolic: last_day_data.blood_pressure_systolic
             - chosen_data.blood_pressure_systolic,
         blood_pressure_diastolic: last_day_data.blood_pressure_diastolic
@@ -89,17 +93,18 @@ fn compare_data(data: &History, check_date: u8) {
         //round to a specified decimal place
         intermediate.round() / 100.0
     };
+    println!("Data from {:?}: {:#?}", chosen_data.date, chosen_data);
 
-    println!("Last day data: {:#?}", difference);
+    println!("Diff to last day data: {:#?}", difference);
 }
 
 #[derive(Debug, Clone, Copy)]
 struct OneMeasurement {
     id: u64,
-    heart_rate: u8,
-    blood_pressure_systolic: u8,
-    blood_pressure_diastolic: u8,
-    sp_o2: u8,
+    heart_rate: i64,
+    blood_pressure_systolic: i64,
+    blood_pressure_diastolic: i64,
+    sp_o2: i64,
     weight_kilo: f64,
     height_centim: f64,
     bmi: f64,
@@ -182,21 +187,20 @@ impl History {
     /// ```
     fn new_entry(
         &mut self,
-        heart_rate: u8,
-        blood_pressure_systolic: u8,
-        blood_pressure_diastolic: u8,
-        sp_o2: u8,
+        heart_rate: i64,
+        blood_pressure_systolic: i64,
+        blood_pressure_diastolic: i64,
+        sp_o2: i64,
         weight_cm: f64,
         height_kg: f64,
         date: Date<Utc>,
     ) {
-        //TODO: append not done correctly yet.
         let get_id: Vec<u64> = self.entry.iter().map(|x| x.id).collect();
 
         let get_id = match get_id.into_iter().max() {
             Some(T) => T,
             None => {
-                println!("Vector is empty");
+                eprintln!("Vector is empty");
                 0
             }
         };
@@ -230,8 +234,6 @@ impl History {
     /// ```
     fn generate_bmi(&mut self) {
         self.entry.iter_mut().for_each(|x| {
-            println!("BMI is now set to: {}: {}", x.id, x.bmi);
-
             //calculate the BMI, prepare to round to a specified decimal place
             //(*1000 for display + *100 for the next calculation)
             x.bmi = (x.weight_kilo / x.height_centim.powf(2.0)) * 100000.;
