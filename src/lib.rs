@@ -13,21 +13,36 @@ pub fn test() {
 
     println!("Today's date (finding this one): {:?}", utc_test);
 
+
+    //generate an empty template
     let mut main_template_struct: History = History::generate_template();
 
-    main_template_struct.new_entry(3, 55, 120, 80, 98, 190.0, 75.3, Utc::today());
 
-    println!("Struct is:\n {:?}", main_template_struct);
+    //define new 2 entries and append them
+    main_template_struct.new_entry(55, 120, 80, 98, 190.0, 75.3, Utc::today());
+    main_template_struct.new_entry(
+        60,
+        140,
+        40,
+        99,
+        110.,
+        190.,
+        Utc::today().sub(chrono::Duration::days(1)),
+    );
 
     //Search for today's entry only
-    println!(
-        "Result of search is:\n {} entry found, : {:?}",
-        main_template_struct.get_data_specific(&utc_test).len(),
-        main_template_struct.get_data_specific(&utc_test)
-    );
-    main_template_struct.get_bmi();
+    match main_template_struct.get_data_specific(&utc_test) {
+        Some(T) => println!("Result of the search is: {:?}", T),
+        None => println!("Error: search term result empty."),
+    };
+
+    main_template_struct.generate_bmi();
 
     println!("BMI filled:\n {:#?}", main_template_struct);
+
+    println!();
+
+    compare_data(&main_template_struct, &utc_test);
 }
 
 ///get date gets a corresponding date offset.
@@ -39,6 +54,11 @@ fn get_date(date: Date<Utc>, unit: u8) -> Date<Utc> {
         4 => date.sub(chrono::Duration::weeks(52)), //year (52 weeks)
         _ => panic!("Impossible value"),
     }
+}
+
+fn compare_data(data: &History, check_date: &Date<Utc>) {
+    let last_day_data = data.get_data_specific(&get_date(Utc::today(), 1));
+    println!("{:?}", last_day_data);
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -60,7 +80,7 @@ struct History {
 }
 
 impl History {
-    ///generates a simple template for testing
+    ///This method generates a simple template for testing.
     fn generate_template<'a>() -> History {
         History {
             entry: vec![
@@ -89,9 +109,25 @@ impl History {
             ],
         }
     }
+    /// This method generates a new entry, automatically assigning it a new ID uint number.
+    ///
+    /// Since we cannot delete any entries, we don't need to handle reordering.
+    ///
+    /// Method also calls the generate_bmi method the BMI based on the data that is present in the entire list
+    /// (regenerates the BMI data for each element).
+    ///
+    /// Example:
+    ///
+    /// ```
+    /// use chrono::{Date, DateTime, Utc};
+    ///
+    /// let mut main_template_struct: History = History::generate_template();
+    ///
+    /// main_template_struct.new_entry(55, 120, 80, 98, 190.0, 75.3, Utc::today());
+    ///
+    /// ```
     fn new_entry(
         &mut self,
-        id: u64,
         heart_rate: u8,
         blood_pressure_systolic: u8,
         blood_pressure_diastolic: u8,
@@ -101,9 +137,9 @@ impl History {
         date: Date<Utc>,
     ) {
         //TODO: append not done correctly yet.
-        let get_id: Vec<u64> = self.entry.iter().map(|x| *x).copied().collect();
+        let get_id: Vec<u64> = self.entry.iter().map(|x| x.id).collect();
 
-        let get_id = match get_id.iter().max() {
+        let get_id = match get_id.into_iter().max() {
             Some(T) => T,
             None => {
                 println!("Vector is empty");
@@ -112,7 +148,7 @@ impl History {
         };
 
         self.entry.push(OneMeasurement {
-            id,
+            id: get_id + 1,
             heart_rate,
             blood_pressure_systolic,
             blood_pressure_diastolic,
@@ -123,10 +159,10 @@ impl History {
             date,
         });
 
-        self.get_bmi();
+        self.generate_bmi();
     }
 
-    fn get_bmi(&mut self) {
+    fn generate_bmi(&mut self) {
         self.entry.iter_mut().for_each(|x| {
             println!("BMI is now set to: {}: {}", x.id, x.bmi);
 
@@ -139,7 +175,7 @@ impl History {
         })
     }
 
-    fn get_data_specific(&self, date_to_find: &Date<Utc>) -> Vec<OneMeasurement> {
+    fn get_data_specific(&self, date_to_find: &Date<Utc>) -> Option<Vec<OneMeasurement>> {
         let output_new: Vec<OneMeasurement> = self
             .entry
             .iter()
@@ -147,7 +183,10 @@ impl History {
             .copied()
             .collect();
 
-        output_new
+        match output_new.len() {
+            0 => None,
+            _ => Some(output_new),
+        }
     }
 }
 
@@ -179,4 +218,7 @@ mod tests {
 
         assert_eq!(result, test_date.sub(chrono::Duration::weeks(52)));
     }
+
+    #[test]
+    fn test_search() {}
 }
